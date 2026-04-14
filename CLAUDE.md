@@ -32,7 +32,7 @@ The core thesis: standard radiometric dating relies on two assumptions -- (1) de
 ## 1. Project Identity
 
 - **Name:** Flood-Adjusted Radiometric Dating Simulator (FAC14)
-- **Location:** `/Users/amrambouskila/IMPORTANT/Projects/flood-simulator/`
+- **Location:** `flood-simulator/`
 - **Master plan:** `docs/FLOOD_SIMULATOR_MASTER_PLAN.md`
 - **Current phase:** Phase 1 -- Streamlit interactive app (complete and functional)
 - **Stack:** Python 3.13, Streamlit, NumPy, Plotly, matplotlib, pandas
