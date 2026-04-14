@@ -6,7 +6,6 @@ a global cataclysmic event (e.g., a worldwide flood) that may have altered
 atmospheric and geological conditions.
 """
 
-import os
 import sys
 import argparse
 import numpy as np
@@ -14,7 +13,6 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 # Import our modules
-from models import create_model
 from simulation import CarbonSimulation
 import visualization as viz
 
@@ -157,7 +155,7 @@ def main():
         'water_vapor_shield': 0.7 if args.model == "flood" else 0.9
     }
     
-    custom_model = sim.setup_custom_model(args.model, **model_params)
+    sim.setup_custom_model(args.model, **model_params)
     
     # Run the simulation
     result = sim.run_simulation(
@@ -191,7 +189,7 @@ def main():
         
         if args.interactive:
             try:
-                import plotly
+                import plotly  # noqa: F401
                 # Create interactive plot
                 fig = viz.plot_interactive_decay_curves(curves, result)
                 

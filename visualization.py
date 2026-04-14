@@ -22,7 +22,7 @@ def plot_decay_curves_matplotlib(simulation_data, show=True, save_path=None):
     ax.plot(simulation_data['age'], simulation_data['standard_ratio'], 
             'b-', label='Standard Model')
     ax.plot(simulation_data['age'], simulation_data['custom_ratio'], 
-            'r-', label=f'Custom Model')
+            'r-', label='Custom Model')
     
     # Add labels and legend
     ax.set_xlabel('Age (years)')
