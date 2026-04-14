@@ -1,0 +1,9 @@
+services:
+  fac14:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fac14-simulator
+    ports:
+      - "${PORT:-8501}:8501"
+    restart: unless-stopped

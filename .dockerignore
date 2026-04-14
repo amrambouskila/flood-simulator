@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+README.md
+fac14_main.py
+simulation.py
+visualization.py
+fac14_service.sh
+fac14_service.bat
+*.csv
+*.png
+*.html
