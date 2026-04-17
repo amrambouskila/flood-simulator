@@ -15,11 +15,13 @@
 
 ### Recent Additions
 - Project infrastructure scaffolded: CLAUDE.md, master plan, docs/, .claude/ hooks and commands, .gitignore, .gitlab-ci.yml
+- Test suite added: `tests/test_models.py`, 57 tests, 100% statement + branch coverage on `models.py`
+- `pyproject.toml` added with pytest and coverage config (scoped to `models`)
+- GitHub Actions CI `test` job now delegates coverage source/threshold to `pyproject.toml`
 
 ### What's Next
-- Add test suite (pytest + pytest-cov) for `models.py` core calculations
-- Add `pyproject.toml` with ruff and pytest configuration
 - Add `from __future__ import annotations` to all modules
-- Clean up `simulation.py` (references stale `create_model` API)
+- Clean up `simulation.py` (imports a stale `create_model` symbol; currently fails at import time and is not wired into coverage)
+- Add ruff config and full type annotations (`ANN` rule) once source files adopt `__future__` annotations
 - Consider splitting `models.py` if it grows further
 - Phase 2 planning: FastAPI backend + React frontend (not started)
