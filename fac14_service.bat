@@ -59,9 +59,10 @@ echo.
 echo ==============================
 echo FAC14 running at http://localhost:%PORT%
 echo.
-echo Press k + Enter = stop but keep image
-echo Press q + Enter = stop ^& remove image
-echo Press r + Enter = full reset ^& restart (rebuild from scratch)
+echo   k = stop (keep image)
+echo   q = stop + remove image
+echo   v = stop + remove image + volumes
+echo   r = full restart (stop, remove, rebuild, relaunch)
 echo ==============================
 
 REM Auto-open browser
@@ -69,11 +70,12 @@ timeout /t 2 /nobreak >nul
 start http://localhost:%PORT%
 
 :wait_choice
-set /p "CHOICE=Enter selection (k/q/r): "
+set /p "CHOICE=Enter selection (k/q/v/r): "
 if /I "%CHOICE%"=="k" goto stop_only
 if /I "%CHOICE%"=="q" goto full_cleanup
+if /I "%CHOICE%"=="v" goto full_cleanup_with_volumes
 if /I "%CHOICE%"=="r" goto full_reset
-echo Invalid selection. Enter k, q, or r.
+echo Invalid selection. Enter k, q, v, or r.
 goto wait_choice
 
 REM ============================================================
@@ -96,13 +98,23 @@ call :remove_images
 goto end_script
 
 REM ============================================================
-REM            r = FULL RESET & RESTART
+REM            v = STOP + REMOVE IMAGES + VOLUMES
+REM ============================================================
+:full_cleanup_with_volumes
+echo.
+echo Stopping and removing all containers and volumes...
+docker compose -f "%COMPOSE_FILE%" down --volumes --remove-orphans
+call :remove_images
+goto end_script
+
+REM ============================================================
+REM            r = FULL RESTART (keep volumes)
 REM ============================================================
 :full_reset
 echo.
-echo ==^> Full reset ^& restart...
-
-docker compose -f "%COMPOSE_FILE%" down --volumes --remove-orphans
+echo === FULL RESTART ===
+echo Stopping containers...
+docker compose -f "%COMPOSE_FILE%" down --remove-orphans
 call :remove_images
 
 echo ==^> Rebuilding Docker image...
@@ -112,9 +124,10 @@ echo.
 echo ==============================
 echo FAC14 restarted at http://localhost:%PORT%
 echo.
-echo Press k + Enter = stop but keep image
-echo Press q + Enter = stop ^& remove image
-echo Press r + Enter = full reset ^& restart (rebuild from scratch)
+echo   k = stop (keep image)
+echo   q = stop + remove image
+echo   v = stop + remove image + volumes
+echo   r = full restart (stop, remove, rebuild, relaunch)
 echo ==============================
 
 timeout /t 2 /nobreak >nul

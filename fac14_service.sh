@@ -71,9 +71,10 @@ echo ""
 echo "=============================="
 echo "FAC14 running at http://localhost:$PORT"
 echo ""
-echo "Press k + Enter = stop but keep image"
-echo "Press q + Enter = stop & remove image"
-echo "Press r + Enter = full reset & restart (rebuild from scratch)"
+echo "  k = stop (keep image)"
+echo "  q = stop + remove image"
+echo "  v = stop + remove image + volumes"
+echo "  r = full restart (stop, remove, rebuild, relaunch)"
 echo "=============================="
 
 # Auto-open browser
@@ -86,7 +87,7 @@ elif command -v xdg-open &>/dev/null; then
 fi
 
 while true; do
-    read -rp "Enter selection (k/q/r): " CHOICE
+    read -rp "Enter selection (k/q/v/r): " CHOICE
     CHOICE=$(printf '%s' "$CHOICE" | tr '[:upper:]' '[:lower:]')
     case "$CHOICE" in
         k)
@@ -102,11 +103,18 @@ while true; do
             remove_images
             exit 0
             ;;
+        v)
+            echo ""
+            echo "Stopping and removing all containers and volumes..."
+            docker compose -f "$COMPOSE_FILE" down --volumes --remove-orphans
+            remove_images
+            exit 0
+            ;;
         r)
             echo ""
-            echo "==> Full reset & restart..."
-
-            docker compose -f "$COMPOSE_FILE" down --volumes --remove-orphans
+            echo "=== FULL RESTART ==="
+            echo "Stopping containers..."
+            docker compose -f "$COMPOSE_FILE" down --remove-orphans
             remove_images
 
             echo "==> Rebuilding Docker image..."
@@ -116,9 +124,10 @@ while true; do
             echo "=============================="
             echo "FAC14 restarted at http://localhost:$PORT"
             echo ""
-            echo "Press k + Enter = stop but keep image"
-            echo "Press q + Enter = stop & remove image"
-            echo "Press r + Enter = full reset & restart (rebuild from scratch)"
+            echo "  k = stop (keep image)"
+            echo "  q = stop + remove image"
+            echo "  v = stop + remove image + volumes"
+            echo "  r = full restart (stop, remove, rebuild, relaunch)"
             echo "=============================="
 
             if command -v open &>/dev/null; then
@@ -129,6 +138,6 @@ while true; do
               xdg-open "http://localhost:$PORT"
             fi
             ;;
-        *) echo "Invalid selection. Enter k, q, or r." ;;
+        *) echo "Invalid selection. Enter k, q, v, or r." ;;
     esac
 done

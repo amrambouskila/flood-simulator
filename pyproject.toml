@@ -1,3 +1,10 @@
+[project]
+name = "flood-simulator"
+version = "0.0.1"
+description = "Flood-Adjusted Radiometric Dating Simulator (FAC14) — Torah-science research tool for exploring C-14 and long-age isotope dating under relaxed uniformitarian assumptions."
+requires-python = ">=3.13"
+readme = "README.md"
+
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
 testpaths = ["tests"]
