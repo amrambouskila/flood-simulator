@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "EDITED_FILE=\"$TOOL_INPUT_FILE_PATH\" && case \"$EDITED_FILE\" in *.env*|*credentials*|*secrets*|*.pem|*.key|*.p12) echo '{\"decision\":\"block\",\"reason\":\"Blocked write to sensitive file. Confirm with user before writing to environment, credential, or key files.\"}' ;; *) ;; esac",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "EDITED_FILE=\"$TOOL_INPUT_FILE_PATH\" && case \"$EDITED_FILE\" in */models.py) echo '{\"hookSpecificOutput\":{\"additionalContext\":\"MODELS.PY EDITED \u2014 Verify: (1) All formulas match standard radiometric dating equations, (2) Constants are named and documented, (3) Units documented on every parameter, (4) No magic numbers in computation, (5) Domain variable names used (P, D, lam, R, A), (6) Type annotations on all methods, (7) Epoch evolution conserves parent+daughter mass, (8) Update docs/versions.md if behavior changed.\"}}' ;; */simulation.py) echo '{\"hookSpecificOutput\":{\"additionalContext\":\"SIMULATION.PY EDITED \u2014 Verify: (1) CarbonSimulation class references valid model APIs, (2) Type annotations on all methods, (3) No stale references to create_model() or old API, (4) Numerical results consistent with FloodAdjustedModel.\"}}' ;; */app.py) echo '{\"hookSpecificOutput\":{\"additionalContext\":\"APP.PY EDITED \u2014 Verify: (1) Slider ranges match parameter table in AGENTS.md Section 7, (2) All tabs still render, (3) No hard-coded display values \u2014 derive from models, (4) Plotly charts configured correctly.\"}}' ;; *) ;; esac",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/amrambouskila/IMPORTANT/Projects/flood-simulator && CHANGED=$(git diff --name-only 2>/dev/null) && STAGED=$(git diff --cached --name-only 2>/dev/null) && UNTRACKED=$(git ls-files --others --exclude-standard 2>/dev/null) && if [ -n \"$CHANGED\" ] || [ -n \"$STAGED\" ] || [ -n \"$UNTRACKED\" ]; then echo '{\"systemMessage\":\"UNCOMMITTED CHANGES DETECTED. Modified: '\"$(echo $CHANGED | tr '\\n' ', ')\"' Staged: '\"$(echo $STAGED | tr '\\n' ', ')\"' Untracked: '\"$(echo $UNTRACKED | tr '\\n' ', ')\"' \u2014 The user manages git. Do NOT suggest committing. Report what files changed and suggest a commit message, clearly labeled as a suggestion.\"}'; else echo '{\"systemMessage\":\"No uncommitted changes.\"}'; fi",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\":\"SESSION END \u2014 MEMORY REVIEW: Before this session closes, review what was learned and suggest memories the user may want to save. Check ~/.codex/memories/-Users-amrambouskila-IMPORTANT-Projects-flood-simulator/memory/MEMORY.md first to avoid duplicates \u2014 update existing memories rather than creating new ones when the topic already exists. Memory types: user (role, preferences, knowledge), feedback (corrections given, confirmed approaches \u2014 include WHY), project (decisions with external motivation, deadlines, stakeholder context), reference (pointers to external systems). Worth saving: corrections the user gave you, non-obvious approaches they confirmed, project decisions driven by external factors, pointers to external tools/systems, user preferences learned this session. NOT worth saving: anything derivable from code or git history, debugging solutions, ephemeral task details, things already in AGENTS.md. Present a short bulleted list of suggested memories at the end of your response and let the user decide which to save. Memory dir: ~/.codex/memories/-Users-amrambouskila-IMPORTANT-Projects-flood-simulator/memory/\"}'",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
