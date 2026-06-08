@@ -6,7 +6,7 @@ set -e
 # ============================================================
 SERVICE_PREFIX="flood_simulator_dev"
 COMPOSE_FILE="docker-compose.yml"
-PORT="${PORT:-8501}"
+PORT="${PORT:-5250}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -53,7 +53,7 @@ for arg in "$@"; do
       echo "  -h, --help      Show this help"
       echo ""
       echo "Environment:"
-      echo "  PORT              Server port (default: 8501)"
+      echo "  PORT              Server port (default: 5250)"
       exit 0
       ;;
   esac

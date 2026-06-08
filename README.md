@@ -72,7 +72,7 @@ graph TD
 # Windows
 fac14_service.bat
 
-# Opens http://localhost:8501 automatically
+# Opens http://localhost:5250 automatically
 # Menu options:
 #   [k] Stop containers, keep images
 #   [q] Stop containers, remove images

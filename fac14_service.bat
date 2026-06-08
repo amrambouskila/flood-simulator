@@ -6,7 +6,7 @@ REM              CONFIGURATION (EDIT THESE ONLY)
 REM ============================================================
 set "SERVICE_PREFIX=flood_simulator_dev"
 set "COMPOSE_FILE=docker-compose.yml"
-if "%PORT%"=="" set "PORT=8501"
+if "%PORT%"=="" set "PORT=5250"
 
 set "SCRIPT_DIR=%~dp0"
 cd /d "%SCRIPT_DIR%"
@@ -28,7 +28,7 @@ echo Options:
 echo   -h, --help      Show this help
 echo.
 echo Environment:
-echo   PORT              Server port (default: 8501)
+echo   PORT              Server port (default: 5250)
 exit /b 0
 
 :done_args

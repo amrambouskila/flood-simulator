@@ -1,5 +1,7 @@
 # Flood-Adjusted Radiometric Dating Simulator (FAC14) - AGENTS.md
 
+<mandatory_workflow>
+
 > **MANDATORY WORKFLOW: READ THIS ENTIRE FILE BEFORE EVERY CHANGE.** Every time. No skimming, no assuming prior-session context carries over -- it does not.
 >
 > **Why:** This project spans multiple sessions and months of development. Skipping the re-read produces decisions that contradict the architecture, duplicate existing patterns, break data contracts, or introduce tech debt that compounds.
@@ -12,7 +14,11 @@
 > 5. Read the source files you plan to modify -- understand existing patterns first.
 > 6. Then implement, following the rules and contracts defined here.
 
+</mandatory_workflow>
+
 ---
+
+<critical_context>
 
 ## 0. Critical Context
 
@@ -27,7 +33,11 @@ The core thesis: standard radiometric dating relies on two assumptions -- (1) de
 
 **Mathematical rigor is non-negotiable.** Every formula in `models.py` must be traceable to standard nuclear physics equations. The flood-adjusted model changes the *inputs* to those equations (initial conditions, acceleration factors), not the equations themselves.
 
+</critical_context>
+
 ---
+
+<project_identity>
 
 ## 1. Project Identity
 
@@ -38,7 +48,11 @@ The core thesis: standard radiometric dating relies on two assumptions -- (1) de
 - **Stack:** Python 3.13, Streamlit, NumPy, Plotly, matplotlib, pandas
 - **Entry point:** `app.py` (Streamlit) and `fac14_main.py` (CLI)
 
+</project_identity>
+
 ---
+
+<phase_constraints>
 
 ## 2. Phase Constraints
 
@@ -69,7 +83,11 @@ The core thesis: standard radiometric dating relies on two assumptions -- (1) de
 
 **Do NOT add backend API endpoints, database models, or React components in Phase 1.**
 
+</phase_constraints>
+
 ---
+
+<architecture>
 
 ## 3. Architecture & Code Rules
 
@@ -110,7 +128,11 @@ Use domain-standard names from nuclear physics:
 - Write a comment only when the *why* is non-obvious: a hidden constraint, a subtle invariant, a domain-specific assumption.
 - Never write comments that restate what the code does.
 
+</architecture>
+
 ---
+
+<containerization>
 
 ## 4. Containerization
 
@@ -131,7 +153,11 @@ Use domain-standard names from nuclear physics:
 - `Dockerfile` only copies `models.py` and `app.py`. If other files are needed at runtime (e.g., `visualization.py`), the COPY directive must be updated.
 - No `.dockerignore` file exists yet.
 
+</containerization>
+
 ---
+
+<ci_cd>
 
 ## 5. CI/CD
 
@@ -149,7 +175,11 @@ Required stages:
 - No test suite exists yet
 - These are infrastructure gaps to fill
 
+</ci_cd>
+
 ---
+
+<environment>
 
 ## 6. Environment Configuration
 
@@ -163,7 +193,11 @@ Single environment variable. No secrets, no database credentials, no API keys in
 ### Port configuration
 - Streamlit: `${PORT:-8501}` (in docker-compose.yml and launcher scripts)
 
+</environment>
+
 ---
+
+<data_contracts>
 
 ## 7. Domain Model & Data Contracts
 
@@ -233,7 +267,11 @@ Groups all long-age isotope systems with shared acceleration settings.
 | K-Ar | K-40 | Ar-40 | 1.248 x 10^9 |
 | Rb-Sr | Rb-87 | Sr-87 | 48.8 x 10^9 |
 
+</data_contracts>
+
 ---
+
+<domain_model>
 
 ## 8. Required Calculations / Formulas
 
@@ -282,7 +320,11 @@ Where `A` = acceleration factor and `dt` = epoch duration.
 3. **Flood Year:** dt = 1 year, A = 10^(flood_accel_log10)
 4. **Post-Flood:** dt = YEARS_SINCE_FLOOD, A = 1
 
+</domain_model>
+
 ---
+
+<file_structure>
 
 ## 9. Directory Structure
 
@@ -324,7 +366,11 @@ flood-simulator/
     └── test_simulation.py
 ```
 
+</file_structure>
+
 ---
+
+<commands>
 
 ## 10. Local Commands
 
@@ -361,7 +407,11 @@ ruff format --check .
 pytest --cov=. --cov-report=term-missing
 ```
 
+</commands>
+
 ---
+
+<testing>
 
 ## 11. Testing Requirements
 
@@ -378,7 +428,11 @@ pytest --cov=. --cov-report=term-missing
 - **Parametrize** tests for multiple isotope systems using `@pytest.mark.parametrize`
 - **No test suite exists yet.** This is a gap to fill.
 
+</testing>
+
 ---
+
+<change_policy>
 
 ## 12. Change Policy & Documentation
 
@@ -395,7 +449,11 @@ pytest --cov=. --cov-report=term-missing
 ### Hands off git
 I manage all git operations myself. You do not run any git command that changes state. Read-only git is fine (`git status`, `git diff`, `git log`, `git show`, `git blame`). When you finish a task, report what files changed, suggest a commit message, and stop.
 
+</change_policy>
+
 ---
+
+<definition_of_done>
 
 ## 13. Output & Completion Expectations
 
@@ -412,8 +470,14 @@ At the end of every non-trivial task, run through this checklist:
 9. **Forward-compatibility check** -- does this work align with Phase 2 (FastAPI + React)?
 10. **Git state** -- report files changed, suggest commit message.
 
+</definition_of_done>
+
 ---
+
+<closing_reminder>
 
 ## 14. Closing Reminder
 
 Re-read this file before the next change. Every rule here exists because it has been needed. The simulation must be mathematically correct, the code must be clean, and the documentation must be current. No exceptions.
+
+</closing_reminder>
