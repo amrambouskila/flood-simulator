@@ -5,5 +5,5 @@ services:
       dockerfile: Dockerfile
     container_name: fac14-simulator
     ports:
-      - "${PORT:-5250}:8501"
+      - "${PORT:-5250}:5250"
     restart: unless-stopped

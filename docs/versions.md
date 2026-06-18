@@ -1,5 +1,9 @@
 # Version History
 
+## v0.2.1
+
+- Container Streamlit port set symmetric to the published host port: the Docker image now serves on `5250` internally (`Dockerfile` `--server.port`/`EXPOSE`/`ENV PORT`) and `docker-compose.yml` maps `${PORT:-5250}:5250`. Host port and all behavior unchanged; eliminates the shared internal `8501` so concurrent multi-app runs never collide on the container port. Workspace `PORT_ASSIGNMENTS.md` updated.
+
 ## v0.2.0
 
 - Test suite for `models.py`: 57 pytest cases covering `StandardModel`, `FloodAdjustedModel`, `RadiometricSystem`, `LongAgeRadiometricSuite`, `format_age`, and module constants

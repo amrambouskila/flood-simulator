@@ -648,7 +648,7 @@ a.index-card:hover .ic-open::after { transform: translateX(3px); }
 
               <div class="callout note">
                 <div class="callout-title">Doc drift to be aware of</div>
-                <div class="callout-body">The two AI-guideline files (<code class="fileref" data-path="CLAUDE.md">CLAUDE.md</code> and <code class="fileref" data-path="AGENTS.md">AGENTS.md</code>) predate the current infra: they say "no <code>pyproject.toml</code>, no test suite, no CI exist yet" and describe a <code>.claude/</code> dir and a <code>.gitlab-ci.yml</code>. In reality the repo now has <code>pyproject.toml</code>, a full test suite, a <code>.codex/</code> + <code>.agents/</code> tooling layout, and <strong>GitHub Actions</strong> (not GitLab) CI. The port also drifts: <code>CLAUDE.md</code>/<code>AGENTS.md</code>/<code>Dockerfile</code> mention 8501, but <code>docker-compose.yml</code>, the launchers, and <code>README.md</code> use host port <strong>5250</strong>. This page documents the <em>actual on-disk state</em>.</div>
+                <div class="callout-body">The two AI-guideline files (<code class="fileref" data-path="CLAUDE.md">CLAUDE.md</code> and <code class="fileref" data-path="AGENTS.md">AGENTS.md</code>) predate the current infra: they say "no <code>pyproject.toml</code>, no test suite, no CI exist yet" and describe a <code>.claude/</code> dir and a <code>.gitlab-ci.yml</code>. In reality the repo now has <code>pyproject.toml</code>, a full test suite, a <code>.codex/</code> + <code>.agents/</code> tooling layout, and <strong>GitHub Actions</strong> (not GitLab) CI. (The port is now consistent at <strong>5250</strong> across the Dockerfile, compose, launchers, README, CLAUDE.md, and AGENTS.md.) This page documents the <em>actual on-disk state</em>.</div>
               </div>
             </div>
           </details>
@@ -812,7 +812,7 @@ sequenceDiagram
 
               <div class="callout key">
                 <div class="callout-title">Process boundaries</div>
-                <div class="callout-body">There is exactly one process: the Streamlit server. No backend API, no worker, no DB, no cache. The Docker container runs <code>streamlit run app.py</code> and serves on port 8501 inside the container, mapped to host 5250.</div>
+                <div class="callout-body">There is exactly one process: the Streamlit server. No backend API, no worker, no DB, no cache. The Docker container runs <code>streamlit run app.py</code> and serves on port 5250 inside the container, mapped to host 5250.</div>
               </div>
             </div>
           </details>
@@ -841,8 +841,8 @@ sequenceDiagram
                 <div class="filecard"><code class="fileref" data-path="requirements.txt">requirements.txt</code><span class="filecard-desc">Pinned-floor dependency list (numpy, matplotlib, pandas, plotly, streamlit).</span></div>
                 <div class="filecard"><code class="fileref" data-path="pyproject.toml">pyproject.toml</code><span class="filecard-desc">Package metadata + pytest config + coverage config (source scoped to <code>models</code>, <code>fail_under=100</code>).</span></div>
                 <div class="filecard"><code class="fileref" data-path="uv.lock">uv.lock</code><span class="filecard-desc">uv lockfile; consumed by the release workflow.</span></div>
-                <div class="filecard"><code class="fileref" data-path="Dockerfile">Dockerfile</code><span class="filecard-desc"><code>python:3.13-slim</code>, installs requirements, copies <code>models.py</code>+<code>app.py</code>, runs Streamlit on 8501.</span></div>
-                <div class="filecard"><code class="fileref" data-path="docker-compose.yml">docker-compose.yml</code><span class="filecard-desc">Single service <code>fac14</code>, maps host <code>${PORT:-5250}</code> → container 8501, <code>restart: unless-stopped</code>.</span></div>
+                <div class="filecard"><code class="fileref" data-path="Dockerfile">Dockerfile</code><span class="filecard-desc"><code>python:3.13-slim</code>, installs requirements, copies <code>models.py</code>+<code>app.py</code>, runs Streamlit on 5250.</span></div>
+                <div class="filecard"><code class="fileref" data-path="docker-compose.yml">docker-compose.yml</code><span class="filecard-desc">Single service <code>fac14</code>, maps host <code>${PORT:-5250}</code> → container 5250, <code>restart: unless-stopped</code>.</span></div>
                 <div class="filecard"><code class="fileref" data-path=".dockerignore">.dockerignore</code><span class="filecard-desc">Excludes the CLI files, caches, and generated CSV/PNG/HTML from the build context.</span></div>
                 <div class="filecard"><code class="fileref" data-path=".gitignore">.gitignore</code><span class="filecard-desc">OS/IDE junk, <code>.env</code>, <code>.claude/</code>, Python build artifacts, simulation outputs.</span></div>
                 <div class="filecard"><code class="fileref" data-path=".gitattributes">.gitattributes</code><span class="filecard-desc">Cross-OS line-ending normalization: scripts/hooks LF, <code>.bat</code>/<code>.ps1</code> CRLF.</span></div>
@@ -1268,17 +1268,17 @@ D_after = D_before + (P_before - P_after)
               <div class="table-wrap"><table class="doc-table">
                 <thead><tr><th>Variable</th><th>Default</th><th>Where</th><th>Meaning</th></tr></thead>
                 <tbody>
-                  <tr><td><code>PORT</code></td><td><code>5250</code></td><td><code class="fileref" data-path="docker-compose.yml">docker-compose.yml</code>, launchers</td><td>Host port mapped to the container's Streamlit 8501.</td></tr>
+                  <tr><td><code>PORT</code></td><td><code>5250</code></td><td><code class="fileref" data-path="docker-compose.yml">docker-compose.yml</code>, launchers</td><td>Host port mapped to the container's Streamlit 5250.</td></tr>
                 </tbody>
               </table></div>
 
               <div class="callout warn">
-                <div class="callout-title">Port confusion to resolve</div>
-                <div class="callout-body">The container always listens on <strong>8501</strong> (hard-coded in the <code>Dockerfile</code> CMD and <code>ENV PORT=8501</code>). The <em>host-side</em> mapping is <code>${PORT:-5250}</code>, so by default the app is reachable at <code>http://localhost:5250</code>. The launchers and README agree on 5250; <code>CLAUDE.md</code>/<code>AGENTS.md</code> still say 8501. There is no committed <code>.env</code> (it's gitignored); set <code>PORT</code> in the shell or a local <code>.env</code> to override the host port.</div>
+                <div class="callout-title">Port mapping</div>
+                <div class="callout-body">The container listens on <strong>5250</strong> (set in the <code>Dockerfile</code> CMD <code>--server.port</code> and <code>ENV PORT=5250</code>), symmetric with the host port. The <em>host-side</em> mapping is <code>${PORT:-5250}</code>, so by default the app is reachable at <code>http://localhost:5250</code>. The Dockerfile, compose, launchers, README, <code>CLAUDE.md</code>, and <code>AGENTS.md</code> all agree on 5250. There is no committed <code>.env</code> (it's gitignored); set <code>PORT</code> in the shell or a local <code>.env</code> to override the host port.</div>
               </div>
 
               <h3 class="anchor">Streamlit server flags</h3>
-              <p>The container runs Streamlit headless with usage stats disabled (<code class="fileref" data-path="Dockerfile:14">Dockerfile:14</code>): <code>--server.port=8501 --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false</code>.</p>
+              <p>The container runs Streamlit headless with usage stats disabled (<code class="fileref" data-path="Dockerfile:14">Dockerfile:14</code>): <code>--server.port=5250 --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false</code>.</p>
             </div>
           </details>
         </section>
@@ -1571,8 +1571,8 @@ gantt
                   <tr><td><code class="fileref" data-path="tests/test_models.py">tests/test_models.py</code></td><td>57 pytest cases; 100% coverage on <code>models.py</code>.</td></tr>
                   <tr><td><code class="fileref" data-path="pyproject.toml">pyproject.toml</code></td><td>Package metadata + pytest + coverage config.</td></tr>
                   <tr><td><code class="fileref" data-path="requirements.txt">requirements.txt</code></td><td>Runtime dependencies.</td></tr>
-                  <tr><td><code class="fileref" data-path="Dockerfile">Dockerfile</code></td><td>slim image, Streamlit on 8501.</td></tr>
-                  <tr><td><code class="fileref" data-path="docker-compose.yml">docker-compose.yml</code></td><td>Single service, host 5250 → 8501.</td></tr>
+                  <tr><td><code class="fileref" data-path="Dockerfile">Dockerfile</code></td><td>slim image, Streamlit on 5250.</td></tr>
+                  <tr><td><code class="fileref" data-path="docker-compose.yml">docker-compose.yml</code></td><td>Single service, host 5250 → 5250.</td></tr>
                   <tr><td><code class="fileref" data-path="fac14_service.sh">fac14_service.sh</code> / <code class="fileref" data-path="fac14_service.bat">.bat</code></td><td>Launchers with k/q/v/r control loop.</td></tr>
                   <tr><td><code class="fileref" data-path=".github/workflows/ci.yml">.github/workflows/ci.yml</code></td><td>CI: lint → test → build → docker-build.</td></tr>
                   <tr><td><code class="fileref" data-path=".github/workflows/release.yml">.github/workflows/release.yml</code></td><td>Manual version bump + tag.</td></tr>

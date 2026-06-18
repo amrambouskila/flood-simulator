@@ -7,8 +7,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY models.py app.py ./
 
-ENV PORT=8501
+ENV PORT=5250
 
-EXPOSE 8501
+EXPOSE 5250
 
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true", "--browser.gatherUsageStats=false"]
+CMD ["streamlit", "run", "app.py", "--server.port=5250", "--server.address=0.0.0.0", "--server.headless=true", "--browser.gatherUsageStats=false"]

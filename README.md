@@ -111,7 +111,7 @@ flood-simulator/
 ├── fac14_main.py          # CLI entry point
 ├── requirements.txt       # Python dependencies
 ├── Dockerfile             # python:3.13-slim + Streamlit
-├── docker-compose.yml     # Single service on port 8501
+├── docker-compose.yml     # Single service on port 5250
 ├── fac14_service.sh       # macOS/Linux launcher
 ├── fac14_service.bat      # Windows launcher
 ├── docs/

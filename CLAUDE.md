@@ -137,8 +137,8 @@ Use domain-standard names from nuclear physics:
 ## 4. Containerization
 
 ### Current Docker setup
-- **Dockerfile:** `python:3.13-slim`, installs from `requirements.txt`, copies `models.py` and `app.py`, runs Streamlit on port 8501
-- **docker-compose.yml:** Single service `fac14`, port `${PORT:-8501}`, `restart: unless-stopped`
+- **Dockerfile:** `python:3.13-slim`, installs from `requirements.txt`, copies `models.py` and `app.py`, runs Streamlit on port 5250 (container port set symmetric to the host port)
+- **docker-compose.yml:** Single service `fac14`, port `${PORT:-5250}`, `restart: unless-stopped`
 - **No healthcheck** -- appropriate for a single-service Streamlit app
 - **No volumes** -- no persistent data in Phase 1
 - **No depends_on** -- single service
@@ -185,13 +185,13 @@ Required stages:
 
 ### `.env` structure
 ```
-PORT=8501                    # Streamlit server port
+PORT=5250                    # host Streamlit port
 ```
 
 Single environment variable. No secrets, no database credentials, no API keys in Phase 1.
 
 ### Port configuration
-- Streamlit: `${PORT:-8501}` (in docker-compose.yml and launcher scripts)
+- Streamlit: `${PORT:-5250}` (in docker-compose.yml and launcher scripts)
 
 </environment>
 
@@ -339,7 +339,7 @@ flood-simulator/
 ├── fac14_main.py                 # CLI entry point
 ├── requirements.txt              # Python dependencies
 ├── Dockerfile                    # python:3.13-slim + Streamlit
-├── docker-compose.yml            # Single service: fac14 on port 8501
+├── docker-compose.yml            # Single service: fac14 on port 5250
 ├── fac14_service.sh              # macOS/Linux launcher
 ├── fac14_service.bat             # Windows launcher
 ├── .gitignore                    # Standard Python + Docker + Claude ignores
@@ -380,7 +380,7 @@ flood-simulator/
 ./fac14_service.sh          # macOS/Linux
 fac14_service.bat            # Windows
 
-# Opens http://localhost:8501 automatically
+# Opens http://localhost:5250 automatically
 # Menu: [k] stop, [q] stop + remove images, [r] full reset & restart
 ```
 

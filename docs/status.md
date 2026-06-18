@@ -18,6 +18,7 @@
 - Test suite added: `tests/test_models.py`, 57 tests, 100% statement + branch coverage on `models.py`
 - `pyproject.toml` added with pytest and coverage config (scoped to `models`)
 - GitHub Actions CI `test` job now delegates coverage source/threshold to `pyproject.toml`
+- Container Streamlit port made symmetric with the host port (`5250` inside the container; `docker-compose.yml` maps `${PORT:-5250}:5250`). Behavior unchanged; removes the shared internal `8501` so every Streamlit app in the workspace exposes a distinct container port.
 
 ### What's Next
 - Add `from __future__ import annotations` to all modules
