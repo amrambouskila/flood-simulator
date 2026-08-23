@@ -95,7 +95,7 @@ The core thesis: standard radiometric dating relies on two assumptions -- (1) de
 - **`from __future__ import annotations`** at the top of every module (not yet applied to existing files -- add when modifying them)
 - Full type annotations on every function signature
 - `snake_case` for modules, functions, variables; `PascalCase` for classes; `UPPER_SNAKE_CASE` for constants
-- ruff for linting: `line-length = 120`, rules: `["E", "F", "I", "N", "UP", "ANN"]`
+- ruff for linting: `line-length = 120`, rules: `["E", "F", "I", "N", "UP", "ANN", "S"]` (`S` = flake8-bandit, see section 11a; `S101` ignored under `tests/` only)
 - No `Any` type without explicit justification
 - No bare `except:` clauses -- always catch specific exception types
 - No dead code, no commented-out blocks, no unused imports
@@ -161,19 +161,20 @@ Use domain-standard names from nuclear physics:
 
 ## 5. CI/CD
 
-### Pipeline (`.gitlab-ci.yml`)
+### Pipeline (`.github/workflows/ci.yml`, GitHub Actions)
 Required stages:
-1. **lint** -- `ruff check .` (fail on any error)
-2. **test** -- `pytest --cov` (fail on any test failure)
-3. **coverage** -- 100% coverage gate on core logic (`models.py`, `simulation.py`)
-4. **build** -- verify Python package builds cleanly
-5. **docker-build** -- `docker build .` to verify Dockerfile integrity
+1. **lint** -- `ruff check .` (fail on any error; includes the `S` rules)
+2. **sast** -- Semgrep + CodeQL + `pip-audit` + `gitleaks`; fail on any HIGH/CRITICAL finding (see section 11a)
+3. **test** -- `pytest --cov` (fail on any test failure)
+4. **coverage** -- 100% coverage gate on core logic (`models.py`, `simulation.py`)
+5. **build** -- verify Python package builds cleanly
+6. **docker-build** -- `docker build .` to verify Dockerfile integrity, then Trivy image scan (HIGH/CRITICAL fail)
 
 ### Not yet implemented
-- No `.gitlab-ci.yml` exists yet
-- No `pyproject.toml` with ruff/pytest config yet
-- No test suite exists yet
-- These are infrastructure gaps to fill
+- `pyproject.toml` carries `[tool.ruff]` with `select = ["E", "F", "S"]` only. The fleet-standard `I`/`N`/`UP`/`ANN` rules are deliberately off -- enabling them surfaces 161 pre-existing import-order and annotation violations across `app.py`, `models.py`, `simulation.py`, `visualization.py`, and `fac14_main.py`. Fixing those is its own task (see `docs/status.md`), kept separate from the security work so the security diff stays readable.
+- `[tool.coverage.run] source = ["models"]` -- coverage is scoped to `models.py`; the rest of the modules are not yet under a coverage gate.
+- `tests/` holds `test_models.py` only (57 tests). No tests for `simulation.py`, `visualization.py`, or `app.py`.
+- These are the remaining infrastructure gaps to fill.
 
 </ci_cd>
 
@@ -343,7 +344,7 @@ flood-simulator/
 ├── fac14_service.sh              # macOS/Linux launcher
 ├── fac14_service.bat             # Windows launcher
 ├── .gitignore                    # Standard Python + Docker + Claude ignores
-├── .gitlab-ci.yml                # CI/CD pipeline
+├── .github/workflows/ci.yml      # CI/CD pipeline (GitHub Actions)
 ├── .env                          # Local env vars (gitignored)
 ├── .claude/
 │   ├── settings.json             # Hooks (SessionStart, PreToolUse, PostToolUse, PreCompact, Stop)
@@ -432,6 +433,56 @@ pytest --cov=. --cov-report=term-missing
 
 ---
 
+<security>
+
+## 11a. Security -- SAST Scanning & Injection Safety (Non-Negotiable)
+
+Applies global `CLAUDE.md` section 19 to this repo. Security is part of the Definition of Done for every task and part of the CI pipeline from the first pipeline commit onward.
+
+### SAST scanning
+- The CI pipeline (`.github/workflows/ci.yml`, GitHub Actions -- this is a public GitHub project) **must have a `sast` job between `lint` and `test`** (`needs: lint`; `test` gets `needs: sast`) -- **wired**. It fails on any HIGH/CRITICAL finding. MEDIUM findings are triaged: fixed or suppressed inline with a written reason. `continue-on-error: true` on any scanner is non-compliant. The `sast` job does not exist yet -- adding it is an open infrastructure gap, to be closed in the same change that next touches the workflow.
+- **Tool set (Python-only project, no TypeScript):**
+  - **Semgrep** -- wired: `pipx run semgrep scan --config auto --config p/owasp-top-ten --config p/python --config p/docker --severity ERROR --error`; SARIF uploaded via `github/codeql-action/upload-sarif`, then a step fails the job when Semgrep reported findings. A `.semgrep/` project-rules directory does not exist yet -- create it with the first repo-specific rule.
+  - **CodeQL** -- wired: `github/codeql-action` init/analyze, language `python`.
+  - **ruff `S` rules (flake8-bandit)** -- wired, partially: `pyproject.toml` gained its first `[tool.ruff]` block with `select = ["E", "F", "S"]` and `"tests/**" = ["S101"]`; `ruff check .` is clean. The fleet-standard `I`/`N`/`UP`/`ANN` rules are **deliberately not enabled yet** -- switching them on surfaces 161 pre-existing import-order and annotation violations across `app.py`, `models.py`, `simulation.py`, `visualization.py`, and `fac14_main.py`. Enabling them is tracked as its own task (see "What's Next" in `docs/status.md`), separate from the security work.
+  - **`pip-audit`** -- wired: `pipx run pip-audit -r requirements.txt` in the `sast` job; known-vulnerable transitive deps fail it.
+  - **`gitleaks`** -- wired: `gitleaks/gitleaks-action@v2` on a `fetch-depth: 0` checkout (`detect --no-git --redact` locally), every run.
+  - **Trivy** -- wired: `aquasecurity/trivy-action@0.28.0` (`severity: HIGH,CRITICAL`, `exit-code: 1`, `ignore-unfixed: true`) against `flood-simulator:ci` inside the existing `docker-build` job, which now builds with `load: true`.
+  - Job-level `permissions: { contents: read, security-events: write, actions: read }` so findings render in Security -> Code scanning.
+- **Local parity** (run before declaring any task done; `/pre-commit` reports it in its verdict table):
+  ```bash
+  ruff check .                                   # includes S rules once selected
+  semgrep scan --config auto --error .
+  uv run pip-audit -r requirements.txt
+  gitleaks detect --no-git --redact
+  docker build -t fac14:local . && trivy image --severity HIGH,CRITICAL --exit-code 1 fac14:local
+  ```
+
+### Injection safety -- input boundary inventory
+Every boundary below treats its input as hostile until it has crossed a typed validation point. No SQL, no subprocess, no `httpx`, no LLM, no templating engine exists in Phase 1 -- do not introduce any of them without adding a row here first.
+
+| Boundary | Where | Injection classes | Required defense |
+|----------|-------|-------------------|------------------|
+| Streamlit sidebar widgets (14 `st.sidebar.slider`, 1 `st.selectbox`) | `app.py` | Resource exhaustion; XSS | Widgets are bounded numeric/enum controls -- min/max/step from the master plan parameter-range table are the validation boundary; never replace a slider with free text. Array sizes (`steps=300` etc.) are code constants, never widget-driven. `unsafe_allow_html=True` is banned on `st.markdown`/`st.write`; f-string Markdown may interpolate only computed numbers and `ISOTOPE_SYSTEMS` constants, never widget strings. |
+| Streamlit HTTP server (host port `${PORT:-5250}`) | `Dockerfile` CMD, `docker-compose.yml` | Resource exhaustion; auth | Keep Streamlit's default XSRF protection and CORS settings (`--server.enableXsrfProtection` default true; never pass `--server.enableCORS=false`). No auth in Phase 1 -- the service is local-dev only and is never exposed beyond the loopback/compose network. |
+| CLI arguments (`argparse`) | `fac14_main.py` | Command injection; path traversal | All args are `type=float`, `store_true`, or `choices=[...]`; `--model` is an enum allowlist. No arg is ever interpolated into a shell command or a file path. |
+| Interactive prompts (`input()`) | `fac14_main.py:get_user_input` | Unsafe parsing | Parsed with `float()`/fixed `y/n` compare; `ValueError` is caught at this boundary and re-prompted -- no `eval`, no `exec`. |
+| File exports (CSV, PNG, HTML) | `simulation.py:export_to_csv`, `export_curves_to_csv`; `visualization.py:save_path`; `fac14_main.py` `--export` | Path traversal | Output filenames are generated in-process (`<prefix>_<timestamp>.<ext>`) into the working directory and are never taken from input. If a user-supplied output path is ever added, it must be `Path(base, name).resolve()` and `is_relative_to(base.resolve())` before any write. |
+| Environment variable `PORT` | `docker-compose.yml`, `fac14_service.{sh,bat}` | Command injection (launchers) | Consumed only as a port number by compose and the launchers; launchers must quote it and never `eval` it. |
+
+**Phase 2 planned boundaries** (documented now so the contract is set before code exists): FastAPI request bodies/query strings -> Pydantic v2 models with the slider ranges as field constraints; WebSocket parameter frames -> same Pydantic models, msgpack decoded with `raw=False` and a size cap; PostgreSQL presets -> SQLAlchemy 2.0 bound parameters only, `text()` only with `:named` binds, preset names length-capped; React frontend -> no `dangerouslySetInnerHTML`, `eslint-plugin-security` + `eslint-plugin-no-unsanitized`, CSP (`default-src 'self'`, explicit `connect-src`), `nosniff`, `X-Frame-Options: DENY` in `nginx.conf`; CORS as an explicit origin allowlist. Each of these becomes a row in the table above when implemented.
+
+### Project-specific additions
+- Plotly `fig.write_html()` (CLI `--export --interactive`) emits a self-contained HTML file with embedded JS into the working directory; its content is derived solely from numeric arrays. Never write user-supplied strings into figure titles/annotations that end up in that HTML.
+- `st.table`/`st.metric` content comes from `LongAgeRadiometricSuite.summary_table()` and model outputs only -- numeric, not user text.
+- No secrets exist in this project; the `.env` carries only `PORT`. Do not add API keys or credentials without routing them through env vars and adding a gitleaks-covered boundary row.
+
+The task-completion checklist in section 13 now includes a **Security check** item.
+
+</security>
+
+---
+
 <change_policy>
 
 ## 12. Change Policy & Documentation
@@ -468,7 +519,8 @@ At the end of every non-trivial task, run through this checklist:
 7. **Docs check** -- list every `docs/` file updated.
 8. **Test check** -- list tests added or updated.
 9. **Forward-compatibility check** -- does this work align with Phase 2 (FastAPI + React)?
-10. **Git state** -- report files changed, suggest commit message.
+10. **Security check** -- local SAST clean (section 11a commands); every touched input boundary names its injection class(es) and defense; `<security>` section updated if a boundary was added.
+11. **Git state** -- report files changed, suggest commit message.
 
 </definition_of_done>
 

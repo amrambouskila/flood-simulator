@@ -24,6 +24,8 @@ Evaluate each gate criterion from the master plan:
 | C-14 flood-era sample dates to ~30,000+ years | ? | Run/verify FloodAdjustedModel calculation |
 | Docker container builds and runs cleanly | ? | Check Dockerfile + docker-compose.yml |
 | Both launcher scripts functional | ? | Check fac14_service.sh and .bat exist and are complete |
+| SAST stage green -- zero HIGH/CRITICAL findings; MEDIUM findings triaged with written justification | ? | Check `.github/workflows/ci.yml` has a `sast` job between `lint` and `test`; latest run findings |
+| New input boundaries in this phase are injection-safe and documented in `CLAUDE.md` `<security>` | ? | Compare AGENTS.md Section 11a boundary table against app.py / fac14_main.py / simulation.py inputs |
 
 ### Infrastructure Status
 
@@ -34,7 +36,7 @@ Evaluate each gate criterion from the master plan:
 | docs/status.md | ? | Current and accurate? |
 | docs/versions.md | ? | Has at least v0.1.0? |
 | .gitignore | ? | Exists with standard ignores? |
-| .gitlab-ci.yml | ? | Exists with lint/test/build/docker-build stages? |
+| .github/workflows/ci.yml | ? | Exists with lint/sast/test/build/docker-build stages? |
 | .codex/settings.json | ? | Full hooks (SessionStart, PreToolUse, PostToolUse, PreCompact, Stop)? |
 | .codex/commands/ | ? | All 5 commands present? |
 | .agents/skills/ | ? | All 3 skills present? |

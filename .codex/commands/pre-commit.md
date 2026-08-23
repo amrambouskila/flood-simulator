@@ -17,28 +17,38 @@ Before anything else:
 ### 1. Lint Check
 Run `ruff check .` mentally (or note if ruff config exists). Report any lint issues found by reading the changed files.
 
-### 2. Code Review
+### 2. SAST Audit
+Run the local scan set from AGENTS.md Section 11a (or note which tools are unavailable on this machine):
+- `ruff check .` with the `S` rules selected
+- `semgrep scan --config auto --error .`
+- `uv run pip-audit -r requirements.txt`
+- `gitleaks detect --no-git --redact`
+- `docker build -t fac14:local . && trivy image --severity HIGH,CRITICAL --exit-code 1 fac14:local`
+
+FAIL on any HIGH/CRITICAL finding. MEDIUM findings must be fixed or suppressed inline with a written reason. For every input boundary touched by the diff, confirm its row in the Section 11a table still names the injection class(es) and defense; a new boundary without a row is a FAIL.
+
+### 3. Code Review
 Run the `/review` checklist against all changed files. Summarize findings by severity.
 
-### 3. Mathematical Validation
+### 4. Mathematical Validation
 For any changes to `models.py`, `simulation.py`, or computation code:
 - Verify formulas against AGENTS.md Section 8
 - Check that epoch evolution conserves mass (P_consumed = P_before - P_after, D_gained = P_consumed)
 - Verify constant values against published reference data
 - Check unit consistency across calculations
 
-### 4. Documentation Check
+### 5. Documentation Check
 Verify these files are updated as needed:
 - `docs/status.md` — reflects current state after the changes?
 - `docs/versions.md` — has an entry for the changes if they warrant a version bump?
-- `AGENTS.md` — updated if domain models or architecture changed?
+- `AGENTS.md` — updated if domain models or architecture changed? Section 11a boundary table updated if an input boundary was added or changed?
 
-### 5. Interface Integrity
+### 6. Interface Integrity
 - Have any public method signatures in `models.py` changed? If so, is `app.py` updated to match?
 - Have any constants changed value? If so, are all references consistent?
 - Have slider ranges changed? If so, does AGENTS.md Section 7 match?
 
-### 6. Test Status
+### 7. Test Status
 - Do tests exist for modified code?
 - Would the changes break existing tests?
 
@@ -48,6 +58,7 @@ Verify these files are updated as needed:
 | Audit Step              | Status      | Details |
 |-------------------------|-------------|---------|
 | Lint                    | PASS / FAIL | ...     |
+| SAST                    | PASS / FAIL | ...     |
 | Code Review             | PASS / FAIL | ...     |
 | Mathematical Validation | PASS / FAIL | ...     |
 | Documentation           | PASS / FAIL | ...     |

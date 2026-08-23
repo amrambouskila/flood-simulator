@@ -5,6 +5,16 @@ description = "Flood-Adjusted Radiometric Dating Simulator (FAC14) — Torah-sci
 requires-python = ">=3.13"
 readme = "README.md"
 
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
 testpaths = ["tests"]

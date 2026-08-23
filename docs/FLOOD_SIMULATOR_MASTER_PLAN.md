@@ -119,6 +119,11 @@ gantt
 - [x] C-14 flood-era sample dates to ~30,000+ years with default settings
 - [x] Docker container builds and runs cleanly
 - [x] Both launcher scripts functional
+- [ ] SAST stage green -- zero HIGH/CRITICAL findings; MEDIUM findings triaged with written justification
+- [ ] New input boundaries in this phase are injection-safe and documented in `CLAUDE.md` `<security>`
+
+**Open infrastructure task (Phase 1, CI already exists in `.github/workflows/ci.yml`):**
+- [ ] Wire `sast` stage (Semgrep + CodeQL + `pip-audit` + `gitleaks`; Trivy in `docker-build`) between `lint` and `test`; add ruff `S` rules to the lint select
 
 ### Phase 2: FastAPI + React Upgrade
 
@@ -144,6 +149,8 @@ gantt
 - [ ] Presets can be saved and loaded from PostgreSQL
 - [ ] 100% test coverage on backend
 - [ ] Docker Compose with frontend + backend + postgres services
+- [ ] SAST stage green -- zero HIGH/CRITICAL findings; MEDIUM findings triaged with written justification
+- [ ] New input boundaries in this phase are injection-safe and documented in `CLAUDE.md` `<security>`
 
 ### Phase 3: Extended Simulation
 
@@ -162,6 +169,8 @@ gantt
 - [ ] Isochron diagrams match standard geological format
 - [ ] Concordia diagrams for U-Pb system
 - [ ] Export produces print-quality figures
+- [ ] SAST stage green -- zero HIGH/CRITICAL findings; MEDIUM findings triaged with written justification
+- [ ] New input boundaries in this phase are injection-safe and documented in `CLAUDE.md` `<security>`
 
 ---
 
@@ -180,6 +189,7 @@ gantt
 | **React + TypeScript** (Phase 2) | Production frontend with strict types |
 | **Chart.js** (Phase 2) | 2D charts in React, replacing Plotly |
 | **PostgreSQL** (Phase 2) | Persistent storage for presets and results |
+| **Semgrep + CodeQL + pip-audit + gitleaks + Trivy** | Fleet-standard SAST/SCA/secret/container scanning; layered so no single tool's blind spot is the whole defense |
 
 ---
 
@@ -214,6 +224,29 @@ These ranges are set in the Streamlit sliders and must be preserved in any futur
 | Volcanic Activity Factor | 1.0 | 5.0 | 1.5 | 0.25 |
 | Ocean Reservoir Factor | 0.20 | 1.0 | 0.60 | 0.05 |
 | Burial Depth (meters) | 0 | 500 | 0 | 10 |
+
+---
+
+### Security
+
+Governed by global `CLAUDE.md` section 19 and this project's `CLAUDE.md` `<security>` section (the authoritative boundary table -- not duplicated here).
+
+**SAST is a mandatory pipeline stage in every phase.** The GitHub Actions pipeline carries a `sast` job between `lint` and `test` from the first pipeline commit onward; it fails on any HIGH/CRITICAL finding, and MEDIUM findings are fixed or suppressed with a written reason. Tool set: Semgrep (SARIF to code scanning), CodeQL (`python`; adds `javascript-typescript` in Phase 2), ruff `S` rules in `lint`, `pip-audit` (plus `pnpm audit --audit-level=high` in Phase 2), `gitleaks`, and Trivy against the built image in `docker-build`. A local command set reproducing the scan is listed in `CLAUDE.md` -> Security.
+
+```mermaid
+graph LR
+    L[lint<br/>ruff incl. S rules] --> S[sast<br/>Semgrep + CodeQL + pip-audit + gitleaks]
+    S --> T[test<br/>pytest --cov + JUnit]
+    T --> B[build]
+    B --> D[docker-build<br/>+ Trivy image scan]
+```
+
+**Injection-safety principles by component:**
+- **Phase 1 (Streamlit + CLI):** all user input enters through bounded numeric widgets, an enum `selectbox`, typed `argparse` args with `choices`, or `float()`-parsed prompts; no SQL, subprocess, outbound HTTP, LLM, or templating exists. `unsafe_allow_html` is banned. Export filenames are generated in-process (timestamped), never taken from input; any future user-supplied path is resolved and checked with `is_relative_to` before writing.
+- **Phase 2 (FastAPI + React + PostgreSQL):** every endpoint and WebSocket frame validates through Pydantic v2 models that encode the parameter-range table above as field constraints; msgpack decoding uses `raw=False` with a size cap; all database access uses SQLAlchemy 2.0 bound parameters; the React frontend bans `dangerouslySetInnerHTML` via `eslint-plugin-security` / `eslint-plugin-no-unsanitized` and ships a restrictive CSP plus `nosniff` / `X-Frame-Options: DENY` in `nginx.conf`; CORS is an explicit origin allowlist.
+- **Phase 3 (export, batch sweeps):** SVG/PDF export paths and sweep parameter files are input boundaries -- path-traversal checks on every output path, `yaml.safe_load` / Pydantic validation on any parameter file, and bounded sweep sizes to prevent resource exhaustion.
+
+Each new boundary lands as a row in the `CLAUDE.md` `<security>` table in the same change that introduces it.
 
 ---
 
