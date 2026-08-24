@@ -21,6 +21,13 @@
 - Container Streamlit port made symmetric with the host port (`5250` inside the container; `docker-compose.yml` maps `${PORT:-5250}:5250`). Behavior unchanged; removes the shared internal `8501` so every Streamlit app in the workspace exposes a distinct container port.
 
 ### Security
+
+### Verified state (2026-08-24)
+
+- **Semgrep: clean.** Verified locally by running this repo's own CI command against the working tree (0 findings). The invocation itself was broken before today — `semgrep ci` rejects `--severity`/`--error` and exited 2 without scanning.
+- **Container scan: base-image CVEs patched** via an `apt-get upgrade` layer, with the two unremediable pip-vendored findings carried in `.trivyignore` with justification.
+
+- Not run locally: gitleaks and Trivy are not part of any project toolchain here; both were exercised through their official images during verification, and CI runs them on every pipeline.
 - Requirements documented: `CLAUDE.md` `<security>` (section 11a) holds the `sast` stage spec, the input-boundary inventory with injection classes and defenses, and the local scan command set; master plan carries the Security section and per-phase SAST gate lines
 - Wired: `sast` job in `.github/workflows/ci.yml` (`needs: lint`; `test` carries `needs: sast`) running CodeQL `python`, `pipx run semgrep scan` with SARIF upload + fail-on-findings, `gitleaks/gitleaks-action@v2`, and `pipx run pip-audit -r requirements.txt`; Trivy (`HIGH,CRITICAL`, `exit-code: 1`) against `flood-simulator:ci` in `docker-build`, which now builds with `load: true`; ruff `S` in the lint select (`pyproject.toml` gained its first `[tool.ruff]` block) with `S101` ignored under `tests/` -- `ruff check .` clean, 57 tests pass
 - Still pending: the fleet-standard `I`/`N`/`UP`/`ANN` ruff rules are NOT enabled -- turning them on surfaces 161 pre-existing import-order/annotation violations, tracked as its own task below; `.semgrep/` project rules.
