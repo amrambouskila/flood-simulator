@@ -447,7 +447,7 @@ Applies global `CLAUDE.md` section 19 to this repo. Security is part of the Defi
   - **ruff `S` rules (flake8-bandit)** -- wired, partially: `pyproject.toml` gained its first `[tool.ruff]` block with `select = ["E", "F", "S"]` and `"tests/**" = ["S101"]`; `ruff check .` is clean. The fleet-standard `I`/`N`/`UP`/`ANN` rules are **deliberately not enabled yet** -- switching them on surfaces 161 pre-existing import-order and annotation violations across `app.py`, `models.py`, `simulation.py`, `visualization.py`, and `fac14_main.py`. Enabling them is tracked as its own task (see "What's Next" in `docs/status.md`), separate from the security work.
   - **`pip-audit`** -- wired: `pipx run pip-audit -r requirements.txt` in the `sast` job; known-vulnerable transitive deps fail it.
   - **`gitleaks`** -- wired: `gitleaks/gitleaks-action@v2` on a `fetch-depth: 0` checkout (`detect --no-git --redact` locally), every run.
-  - **Trivy** -- wired: `aquasecurity/trivy-action@0.28.0` (`severity: HIGH,CRITICAL`, `exit-code: 1`, `ignore-unfixed: true`) against `flood-simulator:ci` inside the existing `docker-build` job, which now builds with `load: true`.
+  - **Trivy** -- wired: `aquasecurity/trivy-action@v0.36.0` (`severity: HIGH,CRITICAL`, `exit-code: 1`, `ignore-unfixed: true`) against `flood-simulator:ci` inside the existing `docker-build` job, which now builds with `load: true`.
   - Job-level `permissions: { contents: read, security-events: write, actions: read }` so findings render in Security -> Code scanning.
 - **Local parity** (run before declaring any task done; `/pre-commit` reports it in its verdict table):
   ```bash

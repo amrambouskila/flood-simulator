@@ -2,6 +2,17 @@
 
 ## v0.2.1
 
+### CI fix: `docker-build` unblocked (2026-08-27)
+
+- **`aquasecurity/trivy-action@0.28.0` never existed.** Since the security wiring landed, `docker-build` failed at *Set up job* on every run -- `Unable to resolve action 'aquasecurity/trivy-action@0.28.0', unable to find version '0.28.0'` -- so the image was never built and the Trivy gate never ran. That repository publishes only `v`-prefixed tags (`v0.36.0` ... `v0.28.0`); the one unprefixed tag in its entire history is a stray `0.35.0`. Now pinned to `aquasecurity/trivy-action@v0.36.0` (latest release), which still accepts every input the job passes: `image-ref`, `severity`, `exit-code`, `ignore-unfixed`. Note for anyone tightening this to a SHA later: `refs/tags/v0.36.0` resolves to the *annotated tag object* `a9c7b0f0`, not a commit -- a SHA pin must use the commit `ed142fd0`, or it fails to resolve exactly the way `@0.28.0` did.
+- **The gate was verified locally before the change shipped**, not assumed, and it passes *only* because of `.trivyignore` -- which was proven by A/B, not inferred. Same fresh `docker build --no-cache --pull` image, same Trivy `v0.70.0` (the version `v0.36.0` installs by default), same job flags (`--severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed`) and Trivy's default scanner set (`vuln,secret`); the only variable is the working directory:
+  - cwd = repo root, `.trivyignore` present -> `Python: 0`, **exit 0**
+  - cwd = empty dir, no `.trivyignore` -> `Python: 2`, **exit 1** -- HIGH `msgpack` 1.1.2 (`GHSA-6v7p-g79w-8964`) and `setuptools` 70.3.0 (`CVE-2025-47273`), both declared in pip's vendored CycloneDX SBOM `pip/_vendor/bom.cdx.json`, which is why neither shows up in `pip list`.
+  CI gets the first case: `actions/checkout` puts `.trivyignore` at `$GITHUB_WORKSPACE`, a composite action's `run:` steps default to that directory, and the action's `entrypoint.sh` sets `TRIVY_IGNOREFILE` only when the `trivyignores` input is supplied -- which this job does not -- so Trivy falls back to `.trivyignore` in the cwd. That discovery is implicit; passing `trivyignores: .trivyignore` explicitly would make it impossible to break silently.
+- **Nothing else in the pipeline needed changing.** Every other action reference resolves, `actionlint` is clean on both workflows, and this job's `cache-from`/`cache-to: type=gha` block is byte-identical to the last fully green run (`28038478577`), so the GHA cache backend is already proven here. `lint`, `sast`, `test` and `build` were already green; `docker-build` was the only red job.
+- Trivy `v0.70.0` pulls its DB from `mirror.gcr.io/aquasec/trivy-db:2`, so the well-known `ghcr.io` `TOOMANYREQUESTS` rate-limit flake does not apply to this pin.
+- Pin corrected in the `<security>` section (11a) of `CLAUDE.md` and `AGENTS.md`.
+
 ### CI hardening + dependency remediation (2026-08-24)
 
 - **Semgrep invocation corrected.** The job used `semgrep ci` with `--severity` and `--error`, which that subcommand does not accept — it exits 2 with a usage error before scanning. Switched to `semgrep scan`, which supports both.
@@ -21,7 +32,7 @@
 
 ### Security wiring
 
-- `.github/workflows/ci.yml`: new `sast` job (`needs: lint`, `permissions: security-events: write`) running CodeQL `python`, `pipx run semgrep scan --config auto --config p/owasp-top-ten --config p/python --config p/docker --severity ERROR --error` with SARIF upload plus a fail-on-findings step, `gitleaks/gitleaks-action@v2`, and `pipx run pip-audit -r requirements.txt`. `test` now carries `needs: sast`. `docker-build` builds with `load: true` as `flood-simulator:ci` and runs `aquasecurity/trivy-action@0.28.0` (`HIGH,CRITICAL`, `exit-code: 1`, `ignore-unfixed: true`).
+- `.github/workflows/ci.yml`: new `sast` job (`needs: lint`, `permissions: security-events: write`) running CodeQL `python`, `pipx run semgrep scan --config auto --config p/owasp-top-ten --config p/python --config p/docker --severity ERROR --error` with SARIF upload plus a fail-on-findings step, `gitleaks/gitleaks-action@v2`, and `pipx run pip-audit -r requirements.txt`. `test` now carries `needs: sast`. `docker-build` builds with `load: true` as `flood-simulator:ci` and runs `aquasecurity/trivy-action@v0.36.0` (`HIGH,CRITICAL`, `exit-code: 1`, `ignore-unfixed: true`).
 - `pyproject.toml`: gained its first `[tool.ruff]` block -- `line-length = 120`, `target-version = "py313"`, `select = ["E", "F", "S"]`, and `[tool.ruff.lint.per-file-ignores] "tests/**" = ["S101"]`. `ruff check .` is clean and the 57-test suite passes.
 - **Deliberate scope limit:** the fleet-standard `I`/`N`/`UP`/`ANN` rules were left off. Enabling them reports 161 pre-existing import-order and missing-annotation violations across the Phase 1 modules; fixing those is a separate refactor, tracked in `docs/status.md`, and bundling it into the security change would have hidden the security diff.
 - Pending: `.semgrep/` rules.
